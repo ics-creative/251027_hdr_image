@@ -1,139 +1,212 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HDR/SDR画像の最適化表示</title>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/img-comparison-slider@8/dist/index.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/img-comparison-slider@8/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script
+      type="module"
+      src="https://cdn.jsdelivr.net/npm/img-comparison-slider@8/dist/index.js"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/img-comparison-slider@8/styles.css"
+    />
+    <script type="importmap">
+      {
+        "imports": {
+          "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"
+        }
+      }
+    </script>
     <style>
-        body {
-            background-color: #000;
-            color: #fff;
+      body {
+        background-color: #000;
+        color: #fff;
+      }
+      .hdr-status {
+        @media (dynamic-range: standard) {
+          &::before {
+            content: "HDR非対応";
+            display: block;
+          }
         }
-        .comparison-container { 
-            max-width: 800px; 
-            margin: 16px auto; 
-            position: relative;
+        @media (dynamic-range: high) {
+          &::before {
+            display: none;
+          }
         }
-        img-comparison-slider {
-            margin-bottom: 16px;
-            --divider-width: 2px;
-            --divider-color: #c0c0c0;
-            --handle-color: #ffffff;
+      }
+
+      .comparison-container {
+        max-width: 800px;
+        margin: 16px auto;
+        position: relative;
+
+        &:fullscreen {
+          background: #000;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
         }
-        img-comparison-slider img { object-fit: cover; width: 100%; }
-        .slider-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 0.5em;
-            color: #666;
+      }
+      img-comparison-slider {
+        margin-bottom: 16px;
+        --divider-width: 2px;
+        --divider-color: #c0c0c0;
+        --handle-color: #ffffff;
+
+        img {
+          object-fit: cover;
+          width: 100%;
         }
-        .fullscreen-btn {
-            position: absolute;
-            top: 64px;
-            right: 16px;
-            background: rgb(0 0 0 / 60%);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: background 0.3s;
-            z-index: 1;
-            & :hover {
-            background: rgb(0 0 0 / 80%);
-            }
+      }
+      .slider-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.5em;
+        color: #666;
+      }
+      .fullscreen-btn {
+        position: absolute;
+        top: 64px;
+        right: 16px;
+        background: rgb(0 0 0 / 60%);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background 0.3s;
+        z-index: 1;
+        & :hover {
+          background: rgb(0 0 0 / 80%);
         }
-       
-        .comparison-container:fullscreen {
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <div class="hdr-status"></div>
     <div id="app">
-        <div v-for="(comparison, index) in comparisons" :key="comparison.title" class="comparison-container" :ref="el => setContainerRef(el, index)">
-            <h1>{{ comparison.title }}</h1>
-            <button class="fullscreen-btn" @click="toggleFullscreen(index)">
-                {{ isFullscreen[index] ? '全画面終了' : '全画面表示' }}
-            </button>
-            <img-comparison-slider>
-                <img slot="first" :src="comparison.firstImage.src" alt="">
-                <img slot="second" :src="comparison.secondImage.src" alt="">
-            </img-comparison-slider>
-            <div class="slider-labels">
-                <span>{{ comparison.firstImage.label }}</span>
-                <span>{{ comparison.secondImage.label }}</span>
-            </div>
-            <p>← スライダーを左右に動かして比較できます →</p>
+      <div
+        v-for="(comparison, index) in comparisons"
+        :key="comparison.title"
+        class="comparison-container"
+        :ref="el => setContainerRef(el, index)"
+      >
+        <h1>{{ comparison.title }}</h1>
+        <button class="fullscreen-btn" @click="toggleFullscreen(index)">
+          {{ isFullscreen[index] ? '全画面終了' : '全画面表示' }}
+        </button>
+        <img-comparison-slider>
+          <img slot="first" :src="comparison.firstImage.src" alt="" />
+          <img slot="second" :src="comparison.secondImage.src" alt="" />
+        </img-comparison-slider>
+        <div class="slider-labels">
+          <span>{{ comparison.firstImage.label }}</span>
+          <span>{{ comparison.secondImage.label }}</span>
         </div>
+        <p>← スライダーを左右に動かして比較できます →</p>
+      </div>
     </div>
 
-    <script>
-        const { createApp, ref, computed, onMounted } = Vue
+    <script type="module">
+      import { createApp, ref, computed, onMounted } from "vue";
 
-        createApp({
-            setup() {
-                const photos = ref([
-                    { dynamicRange: "hdr", colorSpace: "sRGB", src: "20250129-195535_hdr_sRGB.jpg"},
-                    { dynamicRange: "sdr", colorSpace: "sRGB", src: "20250129-195535_sdr_sRGB.jpg"}
-                ])
+      createApp({
+        setup() {
+          const photos = ref([
+            {
+              dynamicRange: "hdr",
+              colorSpace: "sRGB",
+              src: "20250129-195535_hdr_sRGB.jpg",
+            },
+            {
+              dynamicRange: "sdr",
+              colorSpace: "sRGB",
+              src: "20250129-195535_sdr_sRGB.jpg",
+            },
+          ]);
 
-                const comparisonPatterns = [
-                    { title: "HDR vs SDR 比較（sRGB）", first: ["hdr", "sRGB"], second: ["sdr", "sRGB"] },
-                ]
+          const comparisonPatterns = [
+            {
+              title: "HDR vs SDR 比較（sRGB）",
+              first: ["hdr", "sRGB"],
+              second: ["sdr", "sRGB"],
+            },
+          ];
 
-                const comparisons = computed(() =>
-                    comparisonPatterns.map(pattern => {
-                        const first = photos.value.find(p => p.dynamicRange === pattern.first[0] && p.colorSpace === pattern.first[1])
-                        const second = photos.value.find(p => p.dynamicRange === pattern.second[0] && p.colorSpace === pattern.second[1])
-                        return {
-                            title: pattern.title,
-                            firstImage: { src: first.src, alt: "", label: `${first.dynamicRange.toUpperCase()} ${first.colorSpace}` },
-                            secondImage: { src: second.src, alt: "", label: `${second.dynamicRange.toUpperCase()} ${second.colorSpace}` }
-                        }
-                    })
-                )
+          const comparisons = computed(() =>
+            comparisonPatterns.map((pattern) => {
+              const first = photos.value.find(
+                (p) =>
+                  p.dynamicRange === pattern.first[0] &&
+                  p.colorSpace === pattern.first[1]
+              );
+              const second = photos.value.find(
+                (p) =>
+                  p.dynamicRange === pattern.second[0] &&
+                  p.colorSpace === pattern.second[1]
+              );
+              return {
+                title: pattern.title,
+                firstImage: {
+                  src: first.src,
+                  alt: "",
+                  label: `${first.dynamicRange.toUpperCase()} ${
+                    first.colorSpace
+                  }`,
+                },
+                secondImage: {
+                  src: second.src,
+                  alt: "",
+                  label: `${second.dynamicRange.toUpperCase()} ${
+                    second.colorSpace
+                  }`,
+                },
+              };
+            })
+          );
 
-                const containerRefs = ref([])
-                const isFullscreen = ref([])
+          const containerRefs = ref([]);
+          const isFullscreen = ref([]);
 
-                const setContainerRef = (el, index) => {
-                    if (el) {
-                        containerRefs.value[index] = el
-                    }
-                }
-
-                const toggleFullscreen = async (index) => {
-                    const container = containerRefs.value[index]
-                    if (!container) return
-
-                    if (!document.fullscreenElement) {
-                        await container.requestFullscreen()
-                        isFullscreen.value[index] = true
-                    } else {
-                        await document.exitFullscreen()
-                        isFullscreen.value[index] = false
-                    }
-                }
-
-                onMounted(() => {
-                    document.addEventListener('fullscreenchange', () => {
-                        if (!document.fullscreenElement) {
-                            isFullscreen.value = isFullscreen.value.map(() => false)
-                        }
-                    })
-                })
-
-                return { comparisons, isFullscreen, setContainerRef, toggleFullscreen }
+          const setContainerRef = (el, index) => {
+            if (el) {
+              containerRefs.value[index] = el;
             }
-        }).mount('#app')
+          };
+
+          const toggleFullscreen = async (index) => {
+            const container = containerRefs.value[index];
+            if (!container) return;
+
+            if (!document.fullscreenElement) {
+              await container.requestFullscreen();
+              isFullscreen.value[index] = true;
+            } else {
+              await document.exitFullscreen();
+              isFullscreen.value[index] = false;
+            }
+          };
+
+          onMounted(() => {
+            document.addEventListener("fullscreenchange", () => {
+              if (!document.fullscreenElement) {
+                isFullscreen.value = isFullscreen.value.map(() => false);
+              }
+            });
+          });
+
+          return {
+            comparisons,
+            isFullscreen,
+            setContainerRef,
+            toggleFullscreen,
+          };
+        },
+      }).mount("#app");
     </script>
-</body>
+  </body>
 </html>
